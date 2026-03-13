@@ -3,7 +3,6 @@ import 'package:http/http.dart' as http;
 import 'core/network/http_client.dart';
 import 'data/datasources/product_remote_datasource.dart';
 import 'data/repositories/product_repository_impl.dart';
-import 'domain/repositories/product_repository.dart';
 import 'presentation/pages/product_page.dart';
 import 'presentation/viewmodels/product_viewmodel.dart';
 
