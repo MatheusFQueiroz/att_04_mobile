@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'core/network/http_client.dart';
+import 'data/datasources/product_cache_datasource.dart';
 import 'data/datasources/product_remote_datasource.dart';
 import 'data/repositories/product_repository_impl.dart';
 import 'presentation/pages/product_page.dart';
@@ -10,7 +11,11 @@ void main() {
   // Configuração de injeção de dependências
   final httpClient = HttpClient(http.Client());
   final remoteDatasource = ProductRemoteDatasource(httpClient);
-  final productRepository = ProductRepositoryImpl(remoteDatasource);
+  final cacheDatasource = ProductCacheDatasource(); // Cache em memória
+  final productRepository = ProductRepositoryImpl(
+    remoteDatasource,
+    cacheDatasource,
+  );
   final productViewModel = ProductViewModel(productRepository);
 
   runApp(MyApp(viewModel: productViewModel));
