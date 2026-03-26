@@ -30,6 +30,109 @@ class ProductViewModel {
     }
   }
 
+  /// Cria um novo produto na API.
+  ///
+  /// [title] - Título do produto
+  /// [description] - Descrição do produto
+  /// [price] - Preço do produto
+  /// [image] - URL da imagem do produto
+  ///
+  /// Retorna `true` se criado com sucesso, `false` caso contrário.
+  Future<bool> createProduct(
+    String title,
+    String description,
+    double price,
+    String image,
+  ) async {
+    state.value = state.value.copyWith(isSaving: true, saveError: null);
+
+    try {
+      // Usa timestamp como ID temporário único
+      final newProduct = Product(
+        id: DateTime.now().millisecondsSinceEpoch,
+        title: title,
+        description: description,
+        price: price,
+        image: image,
+      );
+
+      final created = await repository.createProduct(newProduct);
+
+      // Adiciona o novo produto à lista
+      final updatedProducts = [...state.value.products, created];
+      state.value = state.value.copyWith(
+        isSaving: false,
+        products: updatedProducts,
+      );
+      return true;
+    } catch (e) {
+      state.value = state.value.copyWith(
+        isSaving: false,
+        saveError: e.toString(),
+      );
+      return false;
+    }
+  }
+
+  /// Atualiza um produto existente na API.
+  ///
+  /// [product] - Produto com os dados atualizados.
+  ///
+  /// Retorna `true` se atualizado com sucesso, `false` caso contrário.
+  Future<bool> updateProduct(Product product) async {
+    state.value = state.value.copyWith(isSaving: true, saveError: null);
+
+    try {
+      final updated = await repository.updateProduct(product);
+
+      // Atualiza o produto na lista
+      final updatedProducts = state.value.products.map((p) {
+        return p.id == updated.id ? updated : p;
+      }).toList();
+
+      state.value = state.value.copyWith(
+        isSaving: false,
+        products: updatedProducts,
+        selectedProduct: null,
+      );
+      return true;
+    } catch (e) {
+      state.value = state.value.copyWith(
+        isSaving: false,
+        saveError: e.toString(),
+      );
+      return false;
+    }
+  }
+
+  /// Remove um produto da API.
+  ///
+  /// [id] - ID do produto a ser removido.
+  ///
+  /// Retorna `true` se removido com sucesso, `false` caso contrário.
+  Future<bool> deleteProduct(int id) async {
+    try {
+      await repository.deleteProduct(id);
+
+      // Remove o produto da lista local
+      final updatedProducts = state.value.products
+          .where((p) => p.id != id)
+          .toList();
+      state.value = state.value.copyWith(products: updatedProducts);
+      return true;
+    } catch (e) {
+      state.value = state.value.copyWith(error: e.toString());
+      return false;
+    }
+  }
+
+  /// Seleciona um produto para edição ou visualização.
+  ///
+  /// [product] - Produto selecionado ou null para limpar seleção.
+  void selectProduct(Product? product) {
+    state.value = state.value.copyWith(selectedProduct: product);
+  }
+
   /// Alterna o estado de favorito do produto com o [productId] fornecido.
   ///
   /// Cria uma nova lista de produtos para garantir que o [ValueNotifier]
@@ -39,13 +142,12 @@ class ProductViewModel {
   void toggleFavorite(int productId) {
     final currentProducts = state.value.products;
 
-    // Cria nova lista para garantir detecção de mudança pelo ValueNotifier
     final updatedProducts = currentProducts.map((product) {
       if (product.id == productId) {
-        // Cria novo objeto Product com o campo favorite invertido
         return Product(
           id: product.id,
           title: product.title,
+          description: product.description,
           price: product.price,
           image: product.image,
           favorite: !product.favorite,

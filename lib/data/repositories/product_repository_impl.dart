@@ -3,6 +3,7 @@ import '../../domain/entities/product.dart';
 import '../../domain/repositories/product_repository.dart';
 import '../datasources/product_cache_datasource.dart';
 import '../datasources/product_remote_datasource.dart';
+import '../models/product_model.dart';
 
 /// Implementação do repositório de produtos com suporte a cache.
 ///
@@ -12,9 +13,7 @@ import '../datasources/product_remote_datasource.dart';
 /// 3. Se falha: tenta retornar os dados do cache (fallback)
 /// 4. Se cache vazio: lança uma Failure
 ///
-/// Essa abordagem garante que o usuário sempre tenha acesso aos dados
-/// mais recentes quando possível, mas ainda possa visualizar dados
-/// offline quando a API não estiver disponível.
+/// Para operações de escrita (create, update, delete), a API é sempre chamada primeiro.
 class ProductRepositoryImpl implements ProductRepository {
   final ProductRemoteDatasource remoteDatasource;
   final ProductCacheDatasource cacheDatasource;
@@ -30,36 +29,70 @@ class ProductRepositoryImpl implements ProductRepository {
       // Salva no cache para uso futuro (offline)
       cacheDatasource.save(models);
 
-      return models
-          .map(
-            (m) => Product(
-              id: m.id,
-              title: m.title,
-              price: m.price,
-              image: m.image,
-            ),
-          )
-          .toList();
+      return models.map((m) => _mapToEntity(m)).toList();
     } catch (e) {
       // Se a API falhar, tenta usar o cache como fallback
       final cached = cacheDatasource.get();
 
       if (cached != null && cached.isNotEmpty) {
-        // Retorna dados do cache quando a API falha
-        return cached
-            .map(
-              (m) => Product(
-                id: m.id,
-                title: m.title,
-                price: m.price,
-                image: m.image,
-              ),
-            )
-            .toList();
+        return cached.map((m) => _mapToEntity(m)).toList();
       }
 
-      // Se não há cache disponível, lança erro
       throw Failure('Não foi possível carregar os produtos');
     }
+  }
+
+  @override
+  Future<Product> createProduct(Product product) async {
+    try {
+      final model = ProductModel(
+        id: product.id,
+        title: product.title,
+        description: product.description,
+        price: product.price,
+        image: product.image,
+      );
+      final created = await remoteDatasource.createProduct(model);
+      return _mapToEntity(created);
+    } catch (e) {
+      throw Failure('Não foi possível criar o produto');
+    }
+  }
+
+  @override
+  Future<Product> updateProduct(Product product) async {
+    try {
+      final model = ProductModel(
+        id: product.id,
+        title: product.title,
+        description: product.description,
+        price: product.price,
+        image: product.image,
+      );
+      final updated = await remoteDatasource.updateProduct(model);
+      return _mapToEntity(updated);
+    } catch (e) {
+      throw Failure('Não foi possível atualizar o produto');
+    }
+  }
+
+  @override
+  Future<void> deleteProduct(int id) async {
+    try {
+      await remoteDatasource.deleteProduct(id);
+    } catch (e) {
+      throw Failure('Não foi possível deletar o produto');
+    }
+  }
+
+  /// Converte um ProductModel para Product (entidade de domínio).
+  Product _mapToEntity(ProductModel m) {
+    return Product(
+      id: m.id,
+      title: m.title,
+      description: m.description,
+      price: m.price,
+      image: m.image,
+    );
   }
 }

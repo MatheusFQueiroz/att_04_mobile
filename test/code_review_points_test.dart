@@ -1,7 +1,7 @@
 // Testes adicionais para verificar os pontos de atenção do Code Review
 //
 // Cobre:
-// - H1: _ProductCard usa `dynamic` — verificar ausência de crashes com dados variados
+// - H1: ProductCard usa tipos estáticos — verificar ausência de crashes
 // - H2: copyWith sempre limpa `error` — verificar comportamento correto
 // - M3: ProductModel.fromJson sem guards — verificar crash com dados inesperados
 // - M4: Race condition no loadProducts — verificar toque duplo rápido no FAB
@@ -23,8 +23,23 @@ import 'package:att_04_mobile_02/presentation/viewmodels/product_state.dart';
 class _FakeRepository implements ProductRepository {
   @override
   Future<List<Product>> getProducts() async => [
-    Product(id: 1, title: 'Produto Teste', price: 99.90, image: ''),
+    Product(
+      id: 1,
+      title: 'Produto Teste',
+      description: 'Descrição do produto teste',
+      price: 99.90,
+      image: '',
+    ),
   ];
+
+  @override
+  Future<Product> createProduct(Product product) async => product;
+
+  @override
+  Future<void> deleteProduct(int id) async {}
+
+  @override
+  Future<Product> updateProduct(Product product) async => product;
 }
 
 class _SlowRepository implements ProductRepository {
@@ -41,11 +56,21 @@ class _SlowRepository implements ProductRepository {
       Product(
         id: callCount,
         title: 'Produto $callCount',
+        description: 'Descrição $callCount',
         price: 10.0,
         image: '',
       ),
     ];
   }
+
+  @override
+  Future<Product> createProduct(Product product) async => product;
+
+  @override
+  Future<void> deleteProduct(int id) async {}
+
+  @override
+  Future<Product> updateProduct(Product product) async => product;
 }
 
 class _ErrorRepository implements ProductRepository {
@@ -57,20 +82,35 @@ class _ErrorRepository implements ProductRepository {
     if (shouldFail) {
       throw Exception('Erro de rede simulado');
     }
-    return [Product(id: 1, title: 'Produto OK', price: 10.0, image: '')];
+    return [
+      Product(
+        id: 1,
+        title: 'Produto OK',
+        description: 'Descrição OK',
+        price: 10.0,
+        image: '',
+      ),
+    ];
   }
+
+  @override
+  Future<Product> createProduct(Product product) async => product;
+
+  @override
+  Future<void> deleteProduct(int id) async {}
+
+  @override
+  Future<Product> updateProduct(Product product) async => product;
 }
 
 // ─── Testes ─────────────────────────────────────────────────────────────────
 
 void main() {
-  // ── H1: _ProductCard com dynamic ─────────────────────────────────────────
-  group('[H1] _ProductCard com campo dynamic — sem crashes', () {
+  // ── H1: ProductCard com tipos estáticos ─────────────────────────────
+  group('[H1] ProductCard com tipos estáticos — sem crashes', () {
     testWidgets('Produto com preço inteiro (int) não crasha ao exibir', (
       WidgetTester tester,
     ) async {
-      // ProductModel.fromJson chama .toDouble() — mas e se price vier como int?
-      // Verificamos que o widget não crasha ao renderizar produto com price double
       final viewModel = ProductViewModel(_FakeRepository());
       await viewModel.loadProducts();
 
@@ -85,7 +125,6 @@ void main() {
     testWidgets('Produto com imagem vazia usa errorBuilder sem crash', (
       WidgetTester tester,
     ) async {
-      // image: '' → Image.network com URL vazia → errorBuilder deve ser chamado
       final viewModel = ProductViewModel(_FakeRepository());
       await viewModel.loadProducts();
 
@@ -114,17 +153,10 @@ void main() {
   // ── H2: copyWith sempre limpa error ──────────────────────────────────────
   group('[H2] copyWith sempre limpa error — comportamento correto', () {
     test('copyWith sem error: null limpa o erro existente', () {
-      // PROBLEMA IDENTIFICADO: copyWith sempre substitui error (não usa ??)
-      // Isso significa que copyWith(isLoading: true) também limpa o error!
       const stateWithError = ProductState(error: 'algum erro');
       final copy = stateWithError.copyWith(isLoading: true);
 
-      // COMPORTAMENTO ATUAL: error é limpo mesmo sem passar error: null
-      // Isso é um side effect do design atual
-      expect(
-        copy.error,
-        isNull,
-      ); // error foi limpo pelo copyWith sem error explícito
+      expect(copy.error, isNull);
     });
 
     test('copyWith com error: null limpa erro explicitamente', () {
@@ -176,7 +208,6 @@ void main() {
         expect(viewModel.state.value.error, isNotNull);
 
         // Inicia segundo load: error deve ser null durante loading
-        // (verificamos o estado intermediário via listener)
         String? errorDuringLoading;
         viewModel.state.addListener(() {
           if (viewModel.state.value.isLoading) {
@@ -199,37 +230,36 @@ void main() {
       final json = {
         'id': 1,
         'title': 'Produto',
+        'description': 'Descrição',
         'price': 9.99,
         'image': 'https://example.com/img.jpg',
       };
       final model = ProductModel.fromJson(json);
       expect(model.id, 1);
       expect(model.title, 'Produto');
+      expect(model.description, 'Descrição');
       expect(model.price, 9.99);
     });
 
     test('fromJson com price como int (não double) — toDouble() funciona', () {
-      // FakeStore API pode retornar price como int em alguns casos
       final json = {
         'id': 1,
         'title': 'Produto',
+        'description': 'Descrição',
         'price': 10, // int, não double
         'image': 'https://example.com/img.jpg',
       };
-      // .toDouble() em int funciona em Dart
       final model = ProductModel.fromJson(json);
       expect(model.price, 10.0);
     });
 
     test('fromJson com campo ausente lança TypeError (sem guard)', () {
-      // PONTO DE ATENÇÃO M3: sem null-safety guards, campos ausentes causam crash
       final jsonSemTitle = {
         'id': 1,
+        'description': 'Descrição',
         'price': 9.99,
         'image': 'https://example.com/img.jpg',
-        // 'title' ausente → json['title'] retorna null → atribuição a String não-nula
       };
-      // Documenta o comportamento atual: lança TypeError
       expect(
         () => ProductModel.fromJson(jsonSemTitle),
         throwsA(isA<TypeError>()),
@@ -237,14 +267,13 @@ void main() {
     });
 
     test('fromJson com price null lança NoSuchMethodError (sem guard)', () {
-      // PONTO DE ATENÇÃO M3: price null → null.toDouble() → crash
       final jsonPriceNull = {
         'id': 1,
         'title': 'Produto',
-        'price': null, // null → .toDouble() vai crashar
+        'description': 'Descrição',
+        'price': null,
         'image': 'https://example.com/img.jpg',
       };
-      // Documenta o comportamento atual: lança NoSuchMethodError
       expect(
         () => ProductModel.fromJson(jsonPriceNull),
         throwsA(anyOf(isA<NoSuchMethodError>(), isA<TypeError>())),
@@ -252,18 +281,29 @@ void main() {
     });
 
     test('fromJson com id como String lança TypeError (sem guard)', () {
-      // id como String em vez de int
       final jsonIdString = {
-        'id': '1', // String em vez de int
+        'id': '1',
         'title': 'Produto',
+        'description': 'Descrição',
         'price': 9.99,
         'image': 'https://example.com/img.jpg',
       };
-      // Documenta o comportamento atual: lança TypeError
       expect(
         () => ProductModel.fromJson(jsonIdString),
         throwsA(isA<TypeError>()),
       );
+    });
+
+    test('fromJson com description null usa string vazia', () {
+      final jsonDescNull = {
+        'id': 1,
+        'title': 'Produto',
+        'description': null,
+        'price': 9.99,
+        'image': 'https://example.com/img.jpg',
+      };
+      final model = ProductModel.fromJson(jsonDescNull);
+      expect(model.description, '');
     });
   });
 
@@ -382,10 +422,7 @@ void main() {
       await tester.pump();
 
       // Deve exibir mensagem específica de "sem favoritos"
-      expect(
-        find.textContaining('Nenhum produto favoritado ainda'),
-        findsOneWidget,
-      );
+      expect(find.textContaining('Nenhum produto favoritado'), findsOneWidget);
     });
 
     testWidgets('Contador de favoritos aparece e desaparece corretamente', (
@@ -425,8 +462,18 @@ class _LongTitleRepository implements ProductRepository {
       id: 1,
       title:
           'Este é um título extremamente longo que deveria ser truncado pelo maxLines: 2 e overflow: TextOverflow.ellipsis para não causar overflow visual na interface do usuário',
+      description: 'Descrição',
       price: 99.90,
       image: '',
     ),
   ];
+
+  @override
+  Future<Product> createProduct(Product product) async => product;
+
+  @override
+  Future<void> deleteProduct(int id) async {}
+
+  @override
+  Future<Product> updateProduct(Product product) async => product;
 }

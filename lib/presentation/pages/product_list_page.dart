@@ -1,18 +1,77 @@
 import 'package:flutter/material.dart';
+import '../../domain/entities/product.dart';
 import '../viewmodels/product_viewmodel.dart';
+import '../widgets/product_card.dart';
+import 'product_detail_page.dart';
+import 'product_form_page.dart';
 
-/// Página principal que exibe a lista de produtos com suporte a favoritos.
+/// Página principal que exibe a lista de produtos com suporte a CRUD e favoritos.
 ///
 /// Funcionalidades:
 /// - Exibe contador de favoritos na AppBar
 /// - Botão de filtro para alternar entre todos/favoritos
-/// - Ícone de estrela em cada item para marcar/desmarcar favorito
-/// - Destaque visual (borda dourada) nos produtos favoritados
+/// - Card de produto com ações: detalhes, favoritar, editar, excluir
+/// - FAB para adicionar novo produto
 /// - Mensagem de estado vazio quando filtro ativo e sem favoritos
-class ProductPage extends StatelessWidget {
+class ProductListPage extends StatelessWidget {
   final ProductViewModel viewModel;
 
-  const ProductPage({super.key, required this.viewModel});
+  const ProductListPage({super.key, required this.viewModel});
+
+  /// Navega para a página de detalhes do produto.
+  void _navigateToDetail(BuildContext context, Product product) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => ProductDetailPage(product: product),
+      ),
+    );
+  }
+
+  /// Navega para o formulário (cadastro ou edição).
+  void _navigateToForm(BuildContext context, {Product? product}) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) =>
+            ProductFormPage(viewModel: viewModel, product: product),
+      ),
+    );
+  }
+
+  /// Mostra diálogo de confirmação antes de excluir.
+  Future<void> _confirmDelete(BuildContext context, Product product) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Confirmar Exclusão'),
+        content: Text('Deseja realmente excluir "${product.title}"?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancelar'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            child: const Text('Excluir'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true && context.mounted) {
+      final success = await viewModel.deleteProduct(product.id);
+      if (success && context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Produto excluído com sucesso!'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -22,13 +81,12 @@ class ProductPage extends StatelessWidget {
         backgroundColor: Colors.deepPurple,
         foregroundColor: Colors.white,
         actions: [
-          // Escuta o estado para atualizar contador e botão de filtro
           ValueListenableBuilder(
             valueListenable: viewModel.state,
             builder: (context, state, _) {
               return Row(
                 children: [
-                  // Contador de favoritos — exibe estrela + número
+                  // Contador de favoritos
                   if (state.favoriteCount > 0)
                     Padding(
                       padding: const EdgeInsets.only(right: 4),
@@ -41,23 +99,18 @@ class ProductPage extends StatelessWidget {
                             style: const TextStyle(
                               color: Colors.white,
                               fontWeight: FontWeight.bold,
-                              fontSize: 14,
                             ),
                           ),
                         ],
                       ),
                     ),
-
-                  // Botão de filtro: alterna entre todos / só favoritos
+                  // Botão de filtro de favoritos
                   IconButton(
                     tooltip: state.showOnlyFavorites
-                        ? 'Mostrar todos os produtos'
-                        : 'Mostrar apenas favoritos',
+                        ? 'Mostrar todos'
+                        : 'Mostrar favoritos',
                     icon: Icon(
-                      state.showOnlyFavorites
-                          ? Icons
-                                .star // filtro ativo: estrela preenchida
-                          : Icons.star_border, // filtro inativo: estrela vazia
+                      state.showOnlyFavorites ? Icons.star : Icons.star_border,
                       color: state.showOnlyFavorites
                           ? Colors.amber
                           : Colors.white,
@@ -106,7 +159,7 @@ class ProductPage extends StatelessWidget {
             return const Center(child: Text('Nenhum produto encontrado'));
           }
 
-          // Estado: filtro de favoritos ativo, mas nenhum produto favoritado
+          // Estado: filtro de favoritos ativo, mas nenhum favoritado
           if (state.showOnlyFavorites && state.displayedProducts.isEmpty) {
             return Center(
               child: Column(
@@ -115,112 +168,36 @@ class ProductPage extends StatelessWidget {
                   Icon(Icons.star_border, size: 64, color: Colors.grey[400]),
                   const SizedBox(height: 16),
                   Text(
-                    'Nenhum produto favoritado ainda.\nToque na estrela (☆) para favoritar!',
-                    style: TextStyle(color: Colors.grey[600], fontSize: 16),
+                    'Nenhum produto favoritado.\nToque na estrela para favoritar!',
                     textAlign: TextAlign.center,
+                    style: TextStyle(color: Colors.grey[600]),
                   ),
                 ],
               ),
             );
           }
 
-          // Estado: lista de produtos (todos ou filtrados)
+          // Lista de produtos
           return ListView.builder(
             itemCount: state.displayedProducts.length,
             itemBuilder: (context, index) {
               final product = state.displayedProducts[index];
-              return _ProductCard(
+              return ProductCard(
                 product: product,
+                onTap: () => _navigateToDetail(context, product),
+                onEdit: () => _navigateToForm(context, product: product),
+                onDelete: () => _confirmDelete(context, product),
                 onToggleFavorite: () => viewModel.toggleFavorite(product.id),
               );
             },
           );
         },
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: viewModel.loadProducts,
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: () => _navigateToForm(context),
         backgroundColor: Colors.deepPurple,
-        tooltip: 'Atualizar produtos',
-        child: const Icon(Icons.refresh, color: Colors.white),
-      ),
-    );
-  }
-}
-
-/// Widget de card para exibir um produto individual.
-///
-/// Exibe destaque visual (borda dourada) quando [product.favorite] é true
-/// e um ícone de estrela clicável para alternar o estado de favorito.
-class _ProductCard extends StatelessWidget {
-  final dynamic product; // Product entity
-  final VoidCallback onToggleFavorite;
-
-  const _ProductCard({required this.product, required this.onToggleFavorite});
-
-  @override
-  Widget build(BuildContext context) {
-    final isFavorite = product.favorite as bool;
-
-    return Card(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      // Borda dourada para produtos favoritados
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(8),
-        side: isFavorite
-            ? const BorderSide(color: Colors.amber, width: 2)
-            : BorderSide.none,
-      ),
-      // Leve fundo amarelado para produtos favoritados
-      color: isFavorite ? Colors.amber.shade50 : null,
-      child: ListTile(
-        // Imagem do produto
-        leading: ClipRRect(
-          borderRadius: BorderRadius.circular(4),
-          child: Image.network(
-            product.image as String,
-            width: 50,
-            height: 50,
-            fit: BoxFit.cover,
-            errorBuilder: (context, error, stackTrace) {
-              return Container(
-                width: 50,
-                height: 50,
-                color: Colors.grey[300],
-                child: const Icon(Icons.image_not_supported),
-              );
-            },
-          ),
-        ),
-
-        // Título do produto
-        title: Text(
-          product.title as String,
-          maxLines: 2,
-          overflow: TextOverflow.ellipsis,
-          style: const TextStyle(fontWeight: FontWeight.bold),
-        ),
-
-        // Preço do produto
-        subtitle: Text(
-          'R\$ ${(product.price as double).toStringAsFixed(2)}',
-          style: TextStyle(
-            color: Colors.green[700],
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-
-        // Ícone de favorito: estrela preenchida (★) ou vazia (☆)
-        trailing: IconButton(
-          tooltip: isFavorite
-              ? 'Remover dos favoritos'
-              : 'Adicionar aos favoritos',
-          icon: Icon(
-            isFavorite ? Icons.star : Icons.star_border,
-            color: isFavorite ? Colors.amber : Colors.grey,
-            size: 28,
-          ),
-          onPressed: onToggleFavorite,
-        ),
+        icon: const Icon(Icons.add, color: Colors.white),
+        label: const Text('Novo', style: TextStyle(color: Colors.white)),
       ),
     );
   }

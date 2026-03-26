@@ -1,8 +1,7 @@
-// Testes de widget para a ProductPage.
+// Testes de widget para a ProductListPage.
 //
-// Nota: o app não chama loadProducts() automaticamente ao iniciar —
-// o carregamento é acionado manualmente pelo usuário via FAB ou
-// programaticamente pelo chamador. Por isso o estado inicial é vazio.
+// Nota: o app chama loadProducts() automaticamente ao iniciar
+// então os produtos devem aparecer após o pump inicial.
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -17,14 +16,29 @@ import 'package:att_04_mobile_02/presentation/viewmodels/product_viewmodel.dart'
 class _FakeRepository implements ProductRepository {
   @override
   Future<List<Product>> getProducts() async => [
-    Product(id: 1, title: 'Produto Teste', price: 99.90, image: ''),
+    Product(
+      id: 1,
+      title: 'Produto Teste',
+      description: 'Descrição do produto teste',
+      price: 99.90,
+      image: '',
+    ),
   ];
+
+  @override
+  Future<Product> createProduct(Product product) async => product;
+
+  @override
+  Future<void> deleteProduct(int id) async {}
+
+  @override
+  Future<Product> updateProduct(Product product) async => product;
 }
 
 // ─── Testes ─────────────────────────────────────────────────────────────────
 
 void main() {
-  testWidgets('App renderiza a ProductPage com título correto', (
+  testWidgets('App renderiza a ProductListPage com título correto', (
     WidgetTester tester,
   ) async {
     final viewModel = ProductViewModel(_FakeRepository());
@@ -35,16 +49,20 @@ void main() {
     expect(find.text('Produtos'), findsOneWidget);
   });
 
-  testWidgets('Estado inicial exibe mensagem de lista vazia', (
+  testWidgets('Após loadProducts, exibe produto na lista', (
     WidgetTester tester,
   ) async {
     final viewModel = ProductViewModel(_FakeRepository());
 
     await tester.pumpWidget(MyApp(viewModel: viewModel));
-    await tester.pump(); // processa o frame inicial
+    await tester.pump();
 
-    // Sem loadProducts chamado, a lista está vazia
-    expect(find.text('Nenhum produto encontrado'), findsOneWidget);
+    // Dispara o carregamento
+    await viewModel.loadProducts();
+    await tester.pump();
+
+    // Produto deve aparecer na lista
+    expect(find.text('Produto Teste'), findsOneWidget);
   });
 
   testWidgets('Após loadProducts, exibe produto na lista', (
@@ -74,14 +92,14 @@ void main() {
     expect(find.byIcon(Icons.star_border), findsOneWidget);
   });
 
-  testWidgets('FAB de refresh está presente', (WidgetTester tester) async {
+  testWidgets('FAB de novo produto está presente', (WidgetTester tester) async {
     final viewModel = ProductViewModel(_FakeRepository());
 
     await tester.pumpWidget(MyApp(viewModel: viewModel));
     await tester.pump();
 
     expect(find.byType(FloatingActionButton), findsOneWidget);
-    expect(find.byIcon(Icons.refresh), findsOneWidget);
+    expect(find.byIcon(Icons.add), findsOneWidget);
   });
 
   testWidgets('Toggle de favorito exibe estrela preenchida', (
@@ -94,7 +112,7 @@ void main() {
     await tester.pump();
 
     // Toca na estrela do produto para favoritar
-    await tester.tap(find.byIcon(Icons.star_border).last);
+    await tester.tap(find.byIcon(Icons.star_border).first);
     await tester.pump();
 
     // Agora deve exibir estrela preenchida (favorito ativo)

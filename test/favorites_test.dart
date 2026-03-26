@@ -18,14 +18,41 @@ class _FakeRepository implements ProductRepository {
 
   @override
   Future<List<Product>> getProducts() async => _products;
+
+  @override
+  Future<Product> createProduct(Product product) async => product;
+
+  @override
+  Future<void> deleteProduct(int id) async {}
+
+  @override
+  Future<Product> updateProduct(Product product) async => product;
 }
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
 List<Product> _makeProducts() => [
-  Product(id: 1, title: 'Produto A', price: 10.0, image: 'img1'),
-  Product(id: 2, title: 'Produto B', price: 20.0, image: 'img2'),
-  Product(id: 3, title: 'Produto C', price: 30.0, image: 'img3'),
+  Product(
+    id: 1,
+    title: 'Produto A',
+    description: 'Descrição A',
+    price: 10.0,
+    image: 'img1',
+  ),
+  Product(
+    id: 2,
+    title: 'Produto B',
+    description: 'Descrição B',
+    price: 20.0,
+    image: 'img2',
+  ),
+  Product(
+    id: 3,
+    title: 'Produto C',
+    description: 'Descrição C',
+    price: 30.0,
+    image: 'img3',
+  ),
 ];
 
 // ─── Testes ─────────────────────────────────────────────────────────────────
@@ -181,7 +208,13 @@ void main() {
   // ── Product entity ────────────────────────────────────────────────────────
   group('Product entity', () {
     test('favorite é false por padrão', () {
-      final p = Product(id: 1, title: 'T', price: 1.0, image: 'img');
+      final p = Product(
+        id: 1,
+        title: 'T',
+        description: 'D',
+        price: 1.0,
+        image: 'img',
+      );
       expect(p.favorite, false);
     });
 
@@ -189,6 +222,7 @@ void main() {
       final p = Product(
         id: 1,
         title: 'T',
+        description: 'D',
         price: 1.0,
         image: 'img',
         favorite: true,
@@ -197,7 +231,13 @@ void main() {
     });
 
     test('favorite pode ser alterado diretamente (mutável)', () {
-      final p = Product(id: 1, title: 'T', price: 1.0, image: 'img');
+      final p = Product(
+        id: 1,
+        title: 'T',
+        description: 'D',
+        price: 1.0,
+        image: 'img',
+      );
       p.favorite = true;
       expect(p.favorite, true);
     });
