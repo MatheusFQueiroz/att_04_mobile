@@ -1,7 +1,11 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:http/http.dart' as http;
 import 'package:att_04_mobile_02/domain/entities/user.dart';
 import 'package:att_04_mobile_02/data/models/user_model.dart';
 import 'package:att_04_mobile_02/core/session/session_controller.dart';
+import 'package:att_04_mobile_02/core/network/http_client.dart';
+import 'package:att_04_mobile_02/data/datasources/auth_remote_datasource.dart';
+import 'package:att_04_mobile_02/presentation/viewmodels/auth_viewmodel.dart';
 
 void main() {
   group('UserModel.fromJson', () {
@@ -52,6 +56,33 @@ void main() {
       ctrl.logout();
       expect(ctrl.user, isNull);
       expect(ctrl.isLoggedIn, false);
+    });
+  });
+
+  group('AuthViewModel', () {
+    test('estado inicial: não carregando, sem erro', () {
+      final ctrl = SessionController.testInstance();
+      final vm = AuthViewModel(
+        AuthRemoteDatasource(HttpClient(http.Client())),
+        ctrl,
+      );
+      expect(vm.state.value.isLoading, false);
+      expect(vm.state.value.error, isNull);
+    });
+
+    test('logout limpa sessão via SessionController', () {
+      final ctrl = SessionController.testInstance();
+      ctrl.login(User(
+        id: 1, username: 'test', firstName: 'Test',
+        lastName: 'User', image: '', accessToken: 'tok',
+      ));
+      final vm = AuthViewModel(
+        AuthRemoteDatasource(HttpClient(http.Client())),
+        ctrl,
+      );
+      vm.logout();
+      expect(ctrl.isLoggedIn, false);
+      expect(ctrl.user, isNull);
     });
   });
 }
