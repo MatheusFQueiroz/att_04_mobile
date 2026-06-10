@@ -2,91 +2,65 @@ import 'dart:convert';
 import '../../core/network/http_client.dart';
 import '../models/product_model.dart';
 
-/// Datasource responsável por buscar produtos da API remota (FakeStoreAPI).
-///
-/// Encapsula todas as chamadas HTTP relacionadas a produtos,
-/// retornando modelos tipados para o repositório.
+/// Datasource responsável por buscar produtos da API DummyJSON.
 class ProductRemoteDatasource {
   final HttpClient client;
-
-  /// URL base da FakeStoreAPI.
-  static const String baseUrl = 'https://fakestoreapi.com/products';
+  static const String _baseUrl = 'https://dummyjson.com/products';
 
   ProductRemoteDatasource(this.client);
 
-  /// Busca todos os produtos da API.
-  ///
-  /// Retorna uma lista de [ProductModel].
-  /// Lança uma [Exception] se a requisição falhar.
+  /// Busca todos os produtos.
+  /// DummyJSON retorna {"products": [...], "total": N, ...}
   Future<List<ProductModel>> getProducts() async {
-    final response = await client.get(baseUrl);
-
+    final response = await client.get(_baseUrl);
     if (response.statusCode == 200) {
-      final List<dynamic> data = jsonDecode(response.body);
-      return data.map((json) => ProductModel.fromJson(json)).toList();
+      final Map<String, dynamic> data = jsonDecode(response.body);
+      final List<dynamic> productsJson = data['products'] as List<dynamic>;
+      return productsJson.map((j) => ProductModel.fromJson(j as Map<String, dynamic>)).toList();
     } else {
       throw Exception('Falha ao carregar produtos');
     }
   }
 
-  /// Busca um produto pelo ID na API.
-  ///
-  /// [id] - ID do produto a ser buscado.
-  /// Retorna o [ProductModel] encontrado.
-  /// Lança uma [Exception] se a requisição falhar.
+  /// Busca produto por ID.
   Future<ProductModel> getProductById(int id) async {
-    final response = await client.get('$baseUrl/$id');
-
+    final response = await client.get('$_baseUrl/$id');
     if (response.statusCode == 200) {
-      return ProductModel.fromJson(jsonDecode(response.body));
+      return ProductModel.fromJson(jsonDecode(response.body) as Map<String, dynamic>);
     } else {
       throw Exception('Produto não encontrado');
     }
   }
 
-  /// Cria um novo produto na API.
-  ///
-  /// [product] - Modelo do produto a ser criado.
-  /// Retorna o [ProductModel] criado com o ID gerado pela API.
-  /// Lança uma [Exception] se a requisição falhar.
+  /// Cria produto via DummyJSON (/products/add).
   Future<ProductModel> createProduct(ProductModel product) async {
     final response = await client.post(
-      baseUrl,
+      '$_baseUrl/add',
       body: jsonEncode(product.toJson()),
     );
-
     if (response.statusCode == 200 || response.statusCode == 201) {
-      return ProductModel.fromJson(jsonDecode(response.body));
+      return ProductModel.fromJson(jsonDecode(response.body) as Map<String, dynamic>);
     } else {
       throw Exception('Falha ao criar produto');
     }
   }
 
-  /// Atualiza um produto existente na API.
-  ///
-  /// [product] - Modelo do produto com os dados atualizados.
-  /// Retorna o [ProductModel] atualizado.
-  /// Lança uma [Exception] se a requisição falhar.
+  /// Atualiza produto existente.
   Future<ProductModel> updateProduct(ProductModel product) async {
     final response = await client.put(
-      '$baseUrl/${product.id}',
+      '$_baseUrl/${product.id}',
       body: jsonEncode(product.toJson()),
     );
-
     if (response.statusCode == 200) {
-      return ProductModel.fromJson(jsonDecode(response.body));
+      return ProductModel.fromJson(jsonDecode(response.body) as Map<String, dynamic>);
     } else {
       throw Exception('Falha ao atualizar produto');
     }
   }
 
-  /// Remove um produto da API.
-  ///
-  /// [id] - ID do produto a ser removido.
-  /// Lança uma [Exception] se a requisição falhar.
+  /// Remove produto.
   Future<void> deleteProduct(int id) async {
-    final response = await client.delete('$baseUrl/$id');
-
+    final response = await client.delete('$_baseUrl/$id');
     if (response.statusCode != 200) {
       throw Exception('Falha ao deletar produto');
     }
