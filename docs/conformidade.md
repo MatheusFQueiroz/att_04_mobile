@@ -197,7 +197,7 @@ Gerenciamento de estado reativo implementado conforme padrão MVVM com Observer 
 
 ## Atividade 08 – Expansão de Navegação com Fake API
 
-**Status: ⚠️ Parcial (4/5 requisitos; 1 lacuna documentada)**
+**Status: ⚠️ Parcial (7/8 requisitos; 1 lacuna documentada)**
 
 A estrutura de navegação está completa e funcional, mas falta o campo `category` do FakeStoreAPI (lacuna conhecida a ser resolvida na Task 2):
 
