@@ -1,13 +1,11 @@
 /// Modelo de dados para serialização/deserialização de produtos.
-///
-/// Separa a camada de dados da entidade de domínio, permitindo
-/// flexibilidade na estrutura da API vs. estrutura interna.
 class ProductModel {
   final int id;
   final String title;
   final String description;
   final double price;
   final String image;
+  final String category;
 
   ProductModel({
     required this.id,
@@ -15,11 +13,9 @@ class ProductModel {
     required this.description,
     required this.price,
     required this.image,
+    required this.category,
   });
 
-  /// Cria um ProductModel a partir de um JSON.
-  ///
-  /// [json] - Map contendo os dados do produto da API.
   factory ProductModel.fromJson(Map<String, dynamic> json) {
     return ProductModel(
       id: json['id'],
@@ -27,12 +23,10 @@ class ProductModel {
       description: json['description'] ?? '',
       price: json['price'].toDouble(),
       image: json['image'],
+      category: json['category'] ?? '',
     );
   }
 
-  /// Converte o ProductModel para JSON.
-  ///
-  /// Retorna um Map<String, dynamic> pronto para serialização.
   Map<String, dynamic> toJson() {
     return {
       'id': id,
@@ -40,6 +34,7 @@ class ProductModel {
       'description': description,
       'price': price,
       'image': image,
+      'category': category,
     };
   }
 }

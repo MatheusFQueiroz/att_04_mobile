@@ -43,6 +43,7 @@ class ProductViewModel {
     String description,
     double price,
     String image,
+    String category,
   ) async {
     state.value = state.value.copyWith(isSaving: true, saveError: null);
 
@@ -54,6 +55,7 @@ class ProductViewModel {
         description: description,
         price: price,
         image: image,
+        category: category,
       );
 
       final created = await repository.createProduct(newProduct);
@@ -150,6 +152,7 @@ class ProductViewModel {
           description: product.description,
           price: product.price,
           image: product.image,
+          category: product.category,
           favorite: !product.favorite,
         );
       }

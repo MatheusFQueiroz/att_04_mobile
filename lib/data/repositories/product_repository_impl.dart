@@ -51,6 +51,7 @@ class ProductRepositoryImpl implements ProductRepository {
         description: product.description,
         price: product.price,
         image: product.image,
+        category: product.category,
       );
       final created = await remoteDatasource.createProduct(model);
       return _mapToEntity(created);
@@ -68,6 +69,7 @@ class ProductRepositoryImpl implements ProductRepository {
         description: product.description,
         price: product.price,
         image: product.image,
+        category: product.category,
       );
       final updated = await remoteDatasource.updateProduct(model);
       return _mapToEntity(updated);
@@ -93,6 +95,7 @@ class ProductRepositoryImpl implements ProductRepository {
       description: m.description,
       price: m.price,
       image: m.image,
+      category: m.category,
     );
   }
 }

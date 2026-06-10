@@ -22,6 +22,7 @@ class _FakeRepository implements ProductRepository {
       description: 'Descrição do produto teste',
       price: 99.90,
       image: '',
+      category: '',
     ),
   ];
 

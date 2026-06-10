@@ -66,6 +66,17 @@ class ProductDetailPage extends StatelessWidget {
                 ),
               ),
             ),
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                const Icon(Icons.category, size: 18, color: Colors.grey),
+                const SizedBox(width: 8),
+                Text(
+                  product.category,
+                  style: TextStyle(fontSize: 14, color: Colors.grey[700]),
+                ),
+              ],
+            ),
             const SizedBox(height: 24),
 
             // Seção de descrição

@@ -38,6 +38,7 @@ List<Product> _makeProducts() => [
     description: 'Descrição A',
     price: 10.0,
     image: 'img1',
+    category: '',
   ),
   Product(
     id: 2,
@@ -45,6 +46,7 @@ List<Product> _makeProducts() => [
     description: 'Descrição B',
     price: 20.0,
     image: 'img2',
+    category: '',
   ),
   Product(
     id: 3,
@@ -52,6 +54,7 @@ List<Product> _makeProducts() => [
     description: 'Descrição C',
     price: 30.0,
     image: 'img3',
+    category: '',
   ),
 ];
 
@@ -214,6 +217,7 @@ void main() {
         description: 'D',
         price: 1.0,
         image: 'img',
+        category: '',
       );
       expect(p.favorite, false);
     });
@@ -225,6 +229,7 @@ void main() {
         description: 'D',
         price: 1.0,
         image: 'img',
+        category: '',
         favorite: true,
       );
       expect(p.favorite, true);
@@ -237,6 +242,7 @@ void main() {
         description: 'D',
         price: 1.0,
         image: 'img',
+        category: '',
       );
       p.favorite = true;
       expect(p.favorite, true);

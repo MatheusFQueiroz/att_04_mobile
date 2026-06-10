@@ -22,6 +22,7 @@ class _ProductFormPageState extends State<ProductFormPage> {
   late final TextEditingController _descriptionController;
   late final TextEditingController _priceController;
   late final TextEditingController _imageController;
+  late final TextEditingController _categoryController;
 
   /// Retorna true se estiver editando um produto existente.
   bool get isEditing => widget.product != null;
@@ -37,6 +38,7 @@ class _ProductFormPageState extends State<ProductFormPage> {
       text: widget.product?.price.toString() ?? '',
     );
     _imageController = TextEditingController(text: widget.product?.image ?? '');
+    _categoryController = TextEditingController(text: widget.product?.category ?? '');
   }
 
   @override
@@ -45,6 +47,7 @@ class _ProductFormPageState extends State<ProductFormPage> {
     _descriptionController.dispose();
     _priceController.dispose();
     _imageController.dispose();
+    _categoryController.dispose();
     super.dispose();
   }
 
@@ -65,6 +68,7 @@ class _ProductFormPageState extends State<ProductFormPage> {
         description: description,
         price: price,
         image: image,
+        category: _categoryController.text,
         favorite: widget.product!.favorite,
       );
       success = await widget.viewModel.updateProduct(updatedProduct);
@@ -74,6 +78,7 @@ class _ProductFormPageState extends State<ProductFormPage> {
         description,
         price,
         image,
+        _categoryController.text,
       );
     }
 
@@ -189,6 +194,22 @@ class _ProductFormPageState extends State<ProductFormPage> {
                       }
                       if (!value.startsWith('http')) {
                         return 'URL inválida (deve começar com http/https)';
+                      }
+                      return null;
+                    },
+                  ),
+                  const SizedBox(height: 16),
+                  TextFormField(
+                    controller: _categoryController,
+                    decoration: const InputDecoration(
+                      labelText: 'Categoria',
+                      hintText: 'ex: electronics, jewelery',
+                      border: OutlineInputBorder(),
+                      prefixIcon: Icon(Icons.category),
+                    ),
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return 'Informe a categoria do produto';
                       }
                       return null;
                     },

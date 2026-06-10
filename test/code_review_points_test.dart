@@ -29,6 +29,7 @@ class _FakeRepository implements ProductRepository {
       description: 'Descrição do produto teste',
       price: 99.90,
       image: '',
+      category: '',
     ),
   ];
 
@@ -59,6 +60,7 @@ class _SlowRepository implements ProductRepository {
         description: 'Descrição $callCount',
         price: 10.0,
         image: '',
+        category: '',
       ),
     ];
   }
@@ -89,6 +91,7 @@ class _ErrorRepository implements ProductRepository {
         description: 'Descrição OK',
         price: 10.0,
         image: '',
+        category: '',
       ),
     ];
   }
@@ -465,6 +468,7 @@ class _LongTitleRepository implements ProductRepository {
       description: 'Descrição',
       price: 99.90,
       image: '',
+      category: '',
     ),
   ];
 
