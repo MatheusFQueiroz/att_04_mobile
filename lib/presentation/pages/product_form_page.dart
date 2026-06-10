@@ -2,10 +2,6 @@ import 'package:flutter/material.dart';
 import '../../domain/entities/product.dart';
 import '../viewmodels/product_viewmodel.dart';
 
-/// Página de formulário para cadastro e edição de produtos.
-///
-/// Se [product] for null, exibe formulário de cadastro.
-/// Se [product] tiver valor, exibe formulário de edição preenchido.
 class ProductFormPage extends StatefulWidget {
   final ProductViewModel viewModel;
   final Product? product;
@@ -21,23 +17,18 @@ class _ProductFormPageState extends State<ProductFormPage> {
   late final TextEditingController _titleController;
   late final TextEditingController _descriptionController;
   late final TextEditingController _priceController;
-  late final TextEditingController _imageController;
+  late final TextEditingController _thumbnailController;
   late final TextEditingController _categoryController;
 
-  /// Retorna true se estiver editando um produto existente.
   bool get isEditing => widget.product != null;
 
   @override
   void initState() {
     super.initState();
     _titleController = TextEditingController(text: widget.product?.title ?? '');
-    _descriptionController = TextEditingController(
-      text: widget.product?.description ?? '',
-    );
-    _priceController = TextEditingController(
-      text: widget.product?.price.toString() ?? '',
-    );
-    _imageController = TextEditingController(text: widget.product?.image ?? '');
+    _descriptionController = TextEditingController(text: widget.product?.description ?? '');
+    _priceController = TextEditingController(text: widget.product?.price.toString() ?? '');
+    _thumbnailController = TextEditingController(text: widget.product?.thumbnail ?? '');
     _categoryController = TextEditingController(text: widget.product?.category ?? '');
   }
 
@@ -46,19 +37,18 @@ class _ProductFormPageState extends State<ProductFormPage> {
     _titleController.dispose();
     _descriptionController.dispose();
     _priceController.dispose();
-    _imageController.dispose();
+    _thumbnailController.dispose();
     _categoryController.dispose();
     super.dispose();
   }
 
-  /// Valida e salva o produto (cria ou atualiza).
   Future<void> _saveProduct() async {
     if (!_formKey.currentState!.validate()) return;
 
     final title = _titleController.text;
     final description = _descriptionController.text;
     final price = double.parse(_priceController.text);
-    final image = _imageController.text;
+    final thumbnail = _thumbnailController.text;
 
     bool success;
     if (isEditing) {
@@ -67,8 +57,10 @@ class _ProductFormPageState extends State<ProductFormPage> {
         title: title,
         description: description,
         price: price,
-        image: image,
+        thumbnail: thumbnail,
         category: _categoryController.text,
+        stock: widget.product!.stock,
+        rating: widget.product!.rating,
         favorite: widget.product!.favorite,
       );
       success = await widget.viewModel.updateProduct(updatedProduct);
@@ -77,7 +69,7 @@ class _ProductFormPageState extends State<ProductFormPage> {
         title,
         description,
         price,
-        image,
+        thumbnail,
         _categoryController.text,
       );
     }
@@ -86,11 +78,7 @@ class _ProductFormPageState extends State<ProductFormPage> {
       Navigator.pop(context);
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(
-            isEditing
-                ? 'Produto atualizado com sucesso!'
-                : 'Produto criado com sucesso!',
-          ),
+          content: Text(isEditing ? 'Produto atualizado com sucesso!' : 'Produto criado com sucesso!'),
           backgroundColor: Colors.green,
         ),
       );
@@ -115,44 +103,27 @@ class _ProductFormPageState extends State<ProductFormPage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  // Campo Título
                   TextFormField(
                     controller: _titleController,
                     decoration: const InputDecoration(
                       labelText: 'Título',
-                      hintText: 'Nome do produto',
                       border: OutlineInputBorder(),
                       prefixIcon: Icon(Icons.title),
                     ),
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return 'Informe o título do produto';
-                      }
-                      return null;
-                    },
+                    validator: (v) => (v == null || v.isEmpty) ? 'Informe o título do produto' : null,
                   ),
                   const SizedBox(height: 16),
-
-                  // Campo Descrição
                   TextFormField(
                     controller: _descriptionController,
                     decoration: const InputDecoration(
                       labelText: 'Descrição',
-                      hintText: 'Descrição do produto',
                       border: OutlineInputBorder(),
                       prefixIcon: Icon(Icons.description),
                     ),
                     maxLines: 3,
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return 'Informe a descrição do produto';
-                      }
-                      return null;
-                    },
+                    validator: (v) => (v == null || v.isEmpty) ? 'Informe a descrição do produto' : null,
                   ),
                   const SizedBox(height: 16),
-
-                  // Campo Preço
                   TextFormField(
                     controller: _priceController,
                     decoration: const InputDecoration(
@@ -163,38 +134,25 @@ class _ProductFormPageState extends State<ProductFormPage> {
                       prefixText: 'R\$ ',
                     ),
                     keyboardType: TextInputType.number,
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return 'Informe o preço do produto';
-                      }
-                      if (double.tryParse(value) == null) {
-                        return 'Preço inválido';
-                      }
-                      final price = double.parse(value);
-                      if (price <= 0) {
-                        return 'O preço deve ser maior que zero';
-                      }
+                    validator: (v) {
+                      if (v == null || v.isEmpty) return 'Informe o preço do produto';
+                      if (double.tryParse(v) == null) return 'Preço inválido';
+                      if (double.parse(v) <= 0) return 'O preço deve ser maior que zero';
                       return null;
                     },
                   ),
                   const SizedBox(height: 16),
-
-                  // Campo URL da Imagem
                   TextFormField(
-                    controller: _imageController,
+                    controller: _thumbnailController,
                     decoration: const InputDecoration(
-                      labelText: 'URL da Imagem',
-                      hintText: 'https://exemplo.com/imagem.jpg',
+                      labelText: 'URL da Thumbnail',
+                      hintText: 'https://exemplo.com/thumb.jpg',
                       border: OutlineInputBorder(),
                       prefixIcon: Icon(Icons.image),
                     ),
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return 'Informe a URL da imagem';
-                      }
-                      if (!value.startsWith('http')) {
-                        return 'URL inválida (deve começar com http/https)';
-                      }
+                    validator: (v) {
+                      if (v == null || v.isEmpty) return 'Informe a URL da thumbnail';
+                      if (!v.startsWith('http')) return 'URL inválida (deve começar com http/https)';
                       return null;
                     },
                   ),
@@ -203,23 +161,17 @@ class _ProductFormPageState extends State<ProductFormPage> {
                     controller: _categoryController,
                     decoration: const InputDecoration(
                       labelText: 'Categoria',
-                      hintText: 'ex: electronics, jewelery',
+                      hintText: 'ex: electronics, beauty',
                       border: OutlineInputBorder(),
                       prefixIcon: Icon(Icons.category),
                     ),
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return 'Informe a categoria do produto';
-                      }
-                      return null;
-                    },
+                    validator: (v) => (v == null || v.isEmpty) ? 'Informe a categoria do produto' : null,
                   ),
                   const SizedBox(height: 24),
-
-                  // Mensagem de erro
                   if (state.saveError != null)
                     Container(
                       padding: const EdgeInsets.all(12),
+                      margin: const EdgeInsets.only(bottom: 16),
                       decoration: BoxDecoration(
                         color: Colors.red[50],
                         borderRadius: BorderRadius.circular(8),
@@ -229,17 +181,11 @@ class _ProductFormPageState extends State<ProductFormPage> {
                           const Icon(Icons.error, color: Colors.red),
                           const SizedBox(width: 8),
                           Expanded(
-                            child: Text(
-                              state.saveError!,
-                              style: const TextStyle(color: Colors.red),
-                            ),
+                            child: Text(state.saveError!, style: const TextStyle(color: Colors.red)),
                           ),
                         ],
                       ),
                     ),
-                  if (state.saveError != null) const SizedBox(height: 16),
-
-                  // Botão Salvar
                   SizedBox(
                     height: 50,
                     child: ElevatedButton.icon(
@@ -248,17 +194,10 @@ class _ProductFormPageState extends State<ProductFormPage> {
                           ? const SizedBox(
                               width: 20,
                               height: 20,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                                color: Colors.white,
-                              ),
+                              child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
                             )
                           : Icon(isEditing ? Icons.save : Icons.add),
-                      label: Text(
-                        state.isSaving
-                            ? 'Salvando...'
-                            : (isEditing ? 'Atualizar' : 'Cadastrar'),
-                      ),
+                      label: Text(state.isSaving ? 'Salvando...' : (isEditing ? 'Atualizar' : 'Cadastrar')),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.deepPurple,
                         foregroundColor: Colors.white,

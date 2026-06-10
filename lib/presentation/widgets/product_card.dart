@@ -1,11 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../domain/entities/product.dart';
 
-/// Card personalizado para exibir um produto na lista.
-///
-/// Mostra a imagem, título, preço e descrição do produto.
-/// Possui botões para favoritar, editar e deletar o produto.
-/// Aplica destaque visual (borda dourada) quando o produto é favorito.
 class ProductCard extends StatelessWidget {
   final Product product;
   final VoidCallback onTap;
@@ -39,11 +34,10 @@ class ProductCard extends StatelessWidget {
           padding: const EdgeInsets.all(12),
           child: Row(
             children: [
-              // Imagem do produto
               ClipRRect(
                 borderRadius: BorderRadius.circular(8),
                 child: Image.network(
-                  product.image,
+                  product.thumbnail,
                   width: 80,
                   height: 80,
                   fit: BoxFit.cover,
@@ -58,8 +52,6 @@ class ProductCard extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 16),
-
-              // Informações do produto
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -68,19 +60,12 @@ class ProductCard extends StatelessWidget {
                       product.title,
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 16,
-                      ),
+                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
                     ),
                     const SizedBox(height: 4),
                     Text(
                       'R\$ ${product.price.toStringAsFixed(2)}',
-                      style: TextStyle(
-                        color: Colors.green[700],
-                        fontWeight: FontWeight.w600,
-                        fontSize: 14,
-                      ),
+                      style: TextStyle(color: Colors.green[700], fontWeight: FontWeight.w600, fontSize: 14),
                     ),
                     const SizedBox(height: 4),
                     Text(
@@ -92,8 +77,6 @@ class ProductCard extends StatelessWidget {
                   ],
                 ),
               ),
-
-              // Ações do produto
               Column(
                 children: [
                   IconButton(
@@ -102,9 +85,7 @@ class ProductCard extends StatelessWidget {
                       color: product.favorite ? Colors.amber : Colors.grey,
                     ),
                     onPressed: onToggleFavorite,
-                    tooltip: product.favorite
-                        ? 'Remover dos favoritos'
-                        : 'Adicionar aos favoritos',
+                    tooltip: product.favorite ? 'Remover dos favoritos' : 'Adicionar aos favoritos',
                   ),
                   IconButton(
                     icon: const Icon(Icons.edit, color: Colors.blue),

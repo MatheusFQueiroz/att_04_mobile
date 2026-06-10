@@ -20,6 +20,9 @@ class _FakeRepository implements ProductRepository {
   Future<List<Product>> getProducts() async => _products;
 
   @override
+  Future<Product> getProductById(int id) async => _products.firstWhere((p) => p.id == id);
+
+  @override
   Future<Product> createProduct(Product product) async => product;
 
   @override
@@ -37,24 +40,30 @@ List<Product> _makeProducts() => [
     title: 'Produto A',
     description: 'Descrição A',
     price: 10.0,
-    image: 'img1',
+    thumbnail: 'img1',
     category: '',
+    stock: 0,
+    rating: 0.0,
   ),
   Product(
     id: 2,
     title: 'Produto B',
     description: 'Descrição B',
     price: 20.0,
-    image: 'img2',
+    thumbnail: 'img2',
     category: '',
+    stock: 0,
+    rating: 0.0,
   ),
   Product(
     id: 3,
     title: 'Produto C',
     description: 'Descrição C',
     price: 30.0,
-    image: 'img3',
+    thumbnail: 'img3',
     category: '',
+    stock: 0,
+    rating: 0.0,
   ),
 ];
 
@@ -216,8 +225,10 @@ void main() {
         title: 'T',
         description: 'D',
         price: 1.0,
-        image: 'img',
+        thumbnail: 'img',
         category: '',
+        stock: 0,
+        rating: 0.0,
       );
       expect(p.favorite, false);
     });
@@ -228,8 +239,10 @@ void main() {
         title: 'T',
         description: 'D',
         price: 1.0,
-        image: 'img',
+        thumbnail: 'img',
         category: '',
+        stock: 0,
+        rating: 0.0,
         favorite: true,
       );
       expect(p.favorite, true);
@@ -241,8 +254,10 @@ void main() {
         title: 'T',
         description: 'D',
         price: 1.0,
-        image: 'img',
+        thumbnail: 'img',
         category: '',
+        stock: 0,
+        rating: 0.0,
       );
       p.favorite = true;
       expect(p.favorite, true);

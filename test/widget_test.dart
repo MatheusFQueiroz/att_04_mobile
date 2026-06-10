@@ -21,10 +21,24 @@ class _FakeRepository implements ProductRepository {
       title: 'Produto Teste',
       description: 'Descrição do produto teste',
       price: 99.90,
-      image: '',
+      thumbnail: '',
       category: '',
+      stock: 0,
+      rating: 0.0,
     ),
   ];
+
+  @override
+  Future<Product> getProductById(int id) async => Product(
+    id: id,
+    title: 'Produto Teste',
+    description: 'Descrição do produto teste',
+    price: 99.90,
+    thumbnail: '',
+    category: '',
+    stock: 0,
+    rating: 0.0,
+  );
 
   @override
   Future<Product> createProduct(Product product) async => product;

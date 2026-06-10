@@ -29,6 +29,21 @@ class ProductRemoteDatasource {
     }
   }
 
+  /// Busca um produto pelo ID na API.
+  ///
+  /// [id] - ID do produto a ser buscado.
+  /// Retorna o [ProductModel] encontrado.
+  /// Lança uma [Exception] se a requisição falhar.
+  Future<ProductModel> getProductById(int id) async {
+    final response = await client.get('$baseUrl/$id');
+
+    if (response.statusCode == 200) {
+      return ProductModel.fromJson(jsonDecode(response.body));
+    } else {
+      throw Exception('Produto não encontrado');
+    }
+  }
+
   /// Cria um novo produto na API.
   ///
   /// [product] - Modelo do produto a ser criado.

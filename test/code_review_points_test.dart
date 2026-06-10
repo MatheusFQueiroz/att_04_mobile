@@ -26,10 +26,15 @@ class _FakeRepository implements ProductRepository {
       title: 'Produto Teste',
       description: 'Descrição do produto teste',
       price: 99.90,
-      image: '',
+      thumbnail: '',
       category: '',
+      stock: 0,
+      rating: 0.0,
     ),
   ];
+
+  @override
+  Future<Product> getProductById(int id) async => getProducts().then((l) => l.first);
 
   @override
   Future<Product> createProduct(Product product) async => product;
@@ -57,11 +62,16 @@ class _SlowRepository implements ProductRepository {
         title: 'Produto $callCount',
         description: 'Descrição $callCount',
         price: 10.0,
-        image: '',
+        thumbnail: '',
         category: '',
+        stock: 0,
+        rating: 0.0,
       ),
     ];
   }
+
+  @override
+  Future<Product> getProductById(int id) async => getProducts().then((l) => l.first);
 
   @override
   Future<Product> createProduct(Product product) async => product;
@@ -88,11 +98,16 @@ class _ErrorRepository implements ProductRepository {
         title: 'Produto OK',
         description: 'Descrição OK',
         price: 10.0,
-        image: '',
+        thumbnail: '',
         category: '',
+        stock: 0,
+        rating: 0.0,
       ),
     ];
   }
+
+  @override
+  Future<Product> getProductById(int id) async => getProducts().then((l) => l.first);
 
   @override
   Future<Product> createProduct(Product product) async => product;
@@ -233,7 +248,7 @@ void main() {
         'title': 'Produto',
         'description': 'Descrição',
         'price': 9.99,
-        'image': 'https://example.com/img.jpg',
+        'thumbnail': 'https://example.com/img.jpg',
       };
       final model = ProductModel.fromJson(json);
       expect(model.id, 1);
@@ -248,7 +263,7 @@ void main() {
         'title': 'Produto',
         'description': 'Descrição',
         'price': 10, // int, não double
-        'image': 'https://example.com/img.jpg',
+        'thumbnail': 'https://example.com/img.jpg',
       };
       final model = ProductModel.fromJson(json);
       expect(model.price, 10.0);
@@ -259,7 +274,7 @@ void main() {
         'id': 1,
         'description': 'Descrição',
         'price': 9.99,
-        'image': 'https://example.com/img.jpg',
+        'thumbnail': 'https://example.com/img.jpg',
       };
       expect(
         () => ProductModel.fromJson(jsonSemTitle),
@@ -273,7 +288,7 @@ void main() {
         'title': 'Produto',
         'description': 'Descrição',
         'price': null,
-        'image': 'https://example.com/img.jpg',
+        'thumbnail': 'https://example.com/img.jpg',
       };
       expect(
         () => ProductModel.fromJson(jsonPriceNull),
@@ -287,7 +302,7 @@ void main() {
         'title': 'Produto',
         'description': 'Descrição',
         'price': 9.99,
-        'image': 'https://example.com/img.jpg',
+        'thumbnail': 'https://example.com/img.jpg',
       };
       expect(
         () => ProductModel.fromJson(jsonIdString),
@@ -301,7 +316,7 @@ void main() {
         'title': 'Produto',
         'description': null,
         'price': 9.99,
-        'image': 'https://example.com/img.jpg',
+        'thumbnail': 'https://example.com/img.jpg',
       };
       final model = ProductModel.fromJson(jsonDescNull);
       expect(model.description, '');
@@ -465,10 +480,15 @@ class _LongTitleRepository implements ProductRepository {
           'Este é um título extremamente longo que deveria ser truncado pelo maxLines: 2 e overflow: TextOverflow.ellipsis para não causar overflow visual na interface do usuário',
       description: 'Descrição',
       price: 99.90,
-      image: '',
+      thumbnail: '',
       category: '',
+      stock: 0,
+      rating: 0.0,
     ),
   ];
+
+  @override
+  Future<Product> getProductById(int id) async => getProducts().then((l) => l.first);
 
   @override
   Future<Product> createProduct(Product product) async => product;

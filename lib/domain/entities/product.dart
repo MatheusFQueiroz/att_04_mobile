@@ -4,8 +4,10 @@ class Product {
   final String title;
   final String description;
   final double price;
-  final String image;
+  final String thumbnail;
   final String category;
+  final int stock;
+  final double rating;
 
   /// Indica se o produto está marcado como favorito pelo usuário.
   bool favorite;
@@ -15,8 +17,10 @@ class Product {
     required this.title,
     required this.description,
     required this.price,
-    required this.image,
+    required this.thumbnail,
     required this.category,
+    this.stock = 0,
+    this.rating = 0.0,
     this.favorite = false,
   });
 }

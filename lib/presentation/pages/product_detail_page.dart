@@ -28,7 +28,7 @@ class ProductDetailPage extends StatelessWidget {
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(12),
                 child: Image.network(
-                  product.image,
+                  product.thumbnail,
                   height: 250,
                   fit: BoxFit.contain,
                   errorBuilder: (context, error, stackTrace) {
