@@ -48,6 +48,7 @@ class _LoginPageState extends State<LoginPage> {
         MaterialPageRoute(
           builder: (_) => ProductListPage(
             viewModel: widget.productViewModel,
+            authViewModel: widget.authViewModel,
           ),
         ),
       );

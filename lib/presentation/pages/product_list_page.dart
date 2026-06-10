@@ -1,29 +1,29 @@
 import 'package:flutter/material.dart';
+import '../../core/session/session_controller.dart';
 import '../../domain/entities/product.dart';
+import '../viewmodels/auth_viewmodel.dart';
 import '../viewmodels/product_viewmodel.dart';
 import '../widgets/product_card.dart';
+import 'login_page.dart';
 import 'product_detail_page.dart';
 import 'product_form_page.dart';
 
-/// Página principal que exibe a lista de produtos com suporte a CRUD e favoritos.
-///
-/// Funcionalidades:
-/// - Exibe contador de favoritos na AppBar
-/// - Botão de filtro para alternar entre todos/favoritos
-/// - Card de produto com ações: detalhes, favoritar, editar, excluir
-/// - FAB para adicionar novo produto
-/// - Mensagem de estado vazio quando filtro ativo e sem favoritos
+/// Tela principal com lista de produtos, favoritos, CRUD e logout.
 class ProductListPage extends StatelessWidget {
   final ProductViewModel viewModel;
+  final AuthViewModel authViewModel;
 
-  const ProductListPage({super.key, required this.viewModel});
+  const ProductListPage({
+    super.key,
+    required this.viewModel,
+    required this.authViewModel,
+  });
 
-  /// Navega para a página de detalhes do produto.
   void _navigateToDetail(BuildContext context, Product product) {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => ProductDetailPage(
+        builder: (_) => ProductDetailPage(
           productId: product.id,
           repository: viewModel.repository,
         ),
@@ -31,18 +31,15 @@ class ProductListPage extends StatelessWidget {
     );
   }
 
-  /// Navega para o formulário (cadastro ou edição).
   void _navigateToForm(BuildContext context, {Product? product}) {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) =>
-            ProductFormPage(viewModel: viewModel, product: product),
+        builder: (_) => ProductFormPage(viewModel: viewModel, product: product),
       ),
     );
   }
 
-  /// Mostra diálogo de confirmação antes de excluir.
   Future<void> _confirmDelete(BuildContext context, Product product) async {
     final confirmed = await showDialog<bool>(
       context: context,
@@ -76,8 +73,23 @@ class ProductListPage extends StatelessWidget {
     }
   }
 
+  void _logout(BuildContext context) {
+    authViewModel.logout();
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(
+        builder: (_) => LoginPage(
+          authViewModel: authViewModel,
+          productViewModel: viewModel,
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    final user = SessionController.instance.user;
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Produtos'),
@@ -89,6 +101,20 @@ class ProductListPage extends StatelessWidget {
             builder: (context, state, _) {
               return Row(
                 children: [
+                  // Nome do usuário logado
+                  if (user != null)
+                    Padding(
+                      padding: const EdgeInsets.only(right: 4),
+                      child: Center(
+                        child: Text(
+                          user.firstName,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ),
+                    ),
                   // Contador de favoritos
                   if (state.favoriteCount > 0)
                     Padding(
@@ -107,18 +133,22 @@ class ProductListPage extends StatelessWidget {
                         ],
                       ),
                     ),
-                  // Botão de filtro de favoritos
+                  // Filtro favoritos
                   IconButton(
                     tooltip: state.showOnlyFavorites
                         ? 'Mostrar todos'
                         : 'Mostrar favoritos',
                     icon: Icon(
                       state.showOnlyFavorites ? Icons.star : Icons.star_border,
-                      color: state.showOnlyFavorites
-                          ? Colors.amber
-                          : Colors.white,
+                      color: state.showOnlyFavorites ? Colors.amber : Colors.white,
                     ),
                     onPressed: viewModel.toggleFavoriteFilter,
+                  ),
+                  // Logout
+                  IconButton(
+                    icon: const Icon(Icons.logout, color: Colors.white),
+                    tooltip: 'Sair',
+                    onPressed: () => _logout(context),
                   ),
                 ],
               );
@@ -129,12 +159,10 @@ class ProductListPage extends StatelessWidget {
       body: ValueListenableBuilder(
         valueListenable: viewModel.state,
         builder: (context, state, _) {
-          // Estado: carregando
           if (state.isLoading) {
             return const Center(child: CircularProgressIndicator());
           }
 
-          // Estado: erro na requisição
           if (state.error != null) {
             return Center(
               child: Column(
@@ -157,12 +185,10 @@ class ProductListPage extends StatelessWidget {
             );
           }
 
-          // Estado: lista geral vazia
           if (state.products.isEmpty) {
             return const Center(child: Text('Nenhum produto encontrado'));
           }
 
-          // Estado: filtro de favoritos ativo, mas nenhum favoritado
           if (state.showOnlyFavorites && state.displayedProducts.isEmpty) {
             return Center(
               child: Column(
@@ -180,7 +206,6 @@ class ProductListPage extends StatelessWidget {
             );
           }
 
-          // Lista de produtos
           return ListView.builder(
             itemCount: state.displayedProducts.length,
             itemBuilder: (context, index) {

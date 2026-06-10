@@ -1,19 +1,22 @@
 // Testes de widget para a ProductListPage.
-//
-// Nota: o app chama loadProducts() automaticamente ao iniciar
-// então os produtos devem aparecer após o pump inicial.
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:http/http.dart' as http;
 
+import 'package:att_04_mobile_02/core/network/http_client.dart';
+import 'package:att_04_mobile_02/core/session/session_controller.dart';
+import 'package:att_04_mobile_02/data/datasources/auth_remote_datasource.dart';
 import 'package:att_04_mobile_02/domain/entities/product.dart';
+import 'package:att_04_mobile_02/domain/entities/user.dart';
 import 'package:att_04_mobile_02/domain/repositories/product_repository.dart';
-import 'package:att_04_mobile_02/main.dart';
+import 'package:att_04_mobile_02/presentation/pages/product_list_page.dart';
+import 'package:att_04_mobile_02/presentation/viewmodels/auth_viewmodel.dart';
 import 'package:att_04_mobile_02/presentation/viewmodels/product_viewmodel.dart';
 
-// ─── Stub de repositório para testes de widget ──────────────────────────────
+// ─── Stubs ──────────────────────────────────────────────────────────────────
 
-class _FakeRepository implements ProductRepository {
+class _FakeProductRepository implements ProductRepository {
   @override
   Future<List<Product>> getProducts() async => [
     Product(
@@ -21,10 +24,10 @@ class _FakeRepository implements ProductRepository {
       title: 'Produto Teste',
       description: 'Descrição do produto teste',
       price: 99.90,
-      thumbnail: '',
-      category: '',
-      stock: 0,
-      rating: 0.0,
+      thumbnail: 'https://cdn.dummyjson.com/thumbnail.jpg',
+      category: 'test',
+      stock: 10,
+      rating: 4.5,
     ),
   ];
 
@@ -32,105 +35,85 @@ class _FakeRepository implements ProductRepository {
   Future<Product> getProductById(int id) async => Product(
     id: id,
     title: 'Produto Teste',
-    description: 'Descrição do produto teste',
+    description: 'Descrição',
     price: 99.90,
-    thumbnail: '',
-    category: '',
-    stock: 0,
-    rating: 0.0,
+    thumbnail: 'https://cdn.dummyjson.com/thumbnail.jpg',
+    category: 'test',
+    stock: 10,
+    rating: 4.5,
   );
 
   @override
-  Future<Product> createProduct(Product product) async => product;
+  Future<Product> createProduct(Product p) async => p;
 
   @override
   Future<void> deleteProduct(int id) async {}
 
   @override
-  Future<Product> updateProduct(Product product) async => product;
+  Future<Product> updateProduct(Product p) async => p;
+}
+
+AuthViewModel _fakeAuthViewModel() {
+  final session = SessionController.testInstance()
+    ..login(User(
+      id: 1, username: 'testuser', firstName: 'Test',
+      lastName: 'User', image: '', accessToken: 'tok',
+    ));
+  return AuthViewModel(
+    AuthRemoteDatasource(HttpClient(http.Client())),
+    session,
+  );
+}
+
+Widget _buildList(ProductViewModel vm, AuthViewModel auth) {
+  return MaterialApp(home: ProductListPage(viewModel: vm, authViewModel: auth));
 }
 
 // ─── Testes ─────────────────────────────────────────────────────────────────
 
 void main() {
-  testWidgets('App renderiza a ProductListPage com título correto', (
-    WidgetTester tester,
-  ) async {
-    final viewModel = ProductViewModel(_FakeRepository());
-
-    await tester.pumpWidget(MyApp(viewModel: viewModel));
-
-    // Título da AppBar deve estar visível
-    expect(find.text('Produtos'), findsOneWidget);
-  });
-
-  testWidgets('Após loadProducts, exibe produto na lista', (
-    WidgetTester tester,
-  ) async {
-    final viewModel = ProductViewModel(_FakeRepository());
-
-    await tester.pumpWidget(MyApp(viewModel: viewModel));
+  testWidgets('Após loadProducts, exibe produto na lista', (tester) async {
+    final vm = ProductViewModel(_FakeProductRepository());
+    final auth = _fakeAuthViewModel();
+    await tester.pumpWidget(_buildList(vm, auth));
+    await vm.loadProducts();
     await tester.pump();
-
-    // Dispara o carregamento
-    await viewModel.loadProducts();
-    await tester.pump();
-
-    // Produto deve aparecer na lista
     expect(find.text('Produto Teste'), findsOneWidget);
   });
 
-  testWidgets('Após loadProducts, exibe produto na lista', (
-    WidgetTester tester,
-  ) async {
-    final viewModel = ProductViewModel(_FakeRepository());
-
-    await tester.pumpWidget(MyApp(viewModel: viewModel));
-
-    // Dispara o carregamento
-    await viewModel.loadProducts();
+  testWidgets('Botão de filtro de favoritos está presente na AppBar', (tester) async {
+    final vm = ProductViewModel(_FakeProductRepository());
+    final auth = _fakeAuthViewModel();
+    await tester.pumpWidget(_buildList(vm, auth));
     await tester.pump();
-
-    // Produto deve aparecer na lista
-    expect(find.text('Produto Teste'), findsOneWidget);
-  });
-
-  testWidgets('Botão de filtro de favoritos está presente na AppBar', (
-    WidgetTester tester,
-  ) async {
-    final viewModel = ProductViewModel(_FakeRepository());
-
-    await tester.pumpWidget(MyApp(viewModel: viewModel));
-    await tester.pump();
-
-    // Ícone de filtro (star_border = filtro inativo) deve estar na AppBar
     expect(find.byIcon(Icons.star_border), findsOneWidget);
   });
 
-  testWidgets('FAB de novo produto está presente', (WidgetTester tester) async {
-    final viewModel = ProductViewModel(_FakeRepository());
-
-    await tester.pumpWidget(MyApp(viewModel: viewModel));
+  testWidgets('FAB de novo produto está presente', (tester) async {
+    final vm = ProductViewModel(_FakeProductRepository());
+    final auth = _fakeAuthViewModel();
+    await tester.pumpWidget(_buildList(vm, auth));
     await tester.pump();
-
     expect(find.byType(FloatingActionButton), findsOneWidget);
     expect(find.byIcon(Icons.add), findsOneWidget);
   });
 
-  testWidgets('Toggle de favorito exibe estrela preenchida', (
-    WidgetTester tester,
-  ) async {
-    final viewModel = ProductViewModel(_FakeRepository());
-    await viewModel.loadProducts();
-
-    await tester.pumpWidget(MyApp(viewModel: viewModel));
+  testWidgets('Toggle de favorito exibe estrela preenchida', (tester) async {
+    final vm = ProductViewModel(_FakeProductRepository());
+    final auth = _fakeAuthViewModel();
+    await vm.loadProducts();
+    await tester.pumpWidget(_buildList(vm, auth));
     await tester.pump();
-
-    // Toca na estrela do produto para favoritar
     await tester.tap(find.byIcon(Icons.star_border).first);
     await tester.pump();
-
-    // Agora deve exibir estrela preenchida (favorito ativo)
     expect(find.byIcon(Icons.star), findsWidgets);
+  });
+
+  testWidgets('Logout button está presente na AppBar', (tester) async {
+    final vm = ProductViewModel(_FakeProductRepository());
+    final auth = _fakeAuthViewModel();
+    await tester.pumpWidget(_buildList(vm, auth));
+    await tester.pump();
+    expect(find.byIcon(Icons.logout), findsOneWidget);
   });
 }

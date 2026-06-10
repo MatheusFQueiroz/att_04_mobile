@@ -8,11 +8,17 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:http/http.dart' as http;
 
+import 'package:att_04_mobile_02/core/network/http_client.dart';
+import 'package:att_04_mobile_02/core/session/session_controller.dart';
+import 'package:att_04_mobile_02/data/datasources/auth_remote_datasource.dart';
 import 'package:att_04_mobile_02/domain/entities/product.dart';
+import 'package:att_04_mobile_02/domain/entities/user.dart';
 import 'package:att_04_mobile_02/domain/repositories/product_repository.dart';
 import 'package:att_04_mobile_02/data/models/product_model.dart';
-import 'package:att_04_mobile_02/main.dart';
+import 'package:att_04_mobile_02/presentation/pages/product_list_page.dart';
+import 'package:att_04_mobile_02/presentation/viewmodels/auth_viewmodel.dart';
 import 'package:att_04_mobile_02/presentation/viewmodels/product_viewmodel.dart';
 import 'package:att_04_mobile_02/presentation/viewmodels/product_state.dart';
 
@@ -119,6 +125,26 @@ class _ErrorRepository implements ProductRepository {
   Future<Product> updateProduct(Product product) async => product;
 }
 
+// ─── Helpers ─────────────────────────────────────────────────────────────────
+
+AuthViewModel _fakeAuthViewModel() {
+  final session = SessionController.testInstance()
+    ..login(User(
+      id: 1, username: 'testuser', firstName: 'Test',
+      lastName: 'User', image: '', accessToken: 'tok',
+    ));
+  return AuthViewModel(
+    AuthRemoteDatasource(HttpClient(http.Client())),
+    session,
+  );
+}
+
+Widget _buildApp(ProductViewModel vm) {
+  return MaterialApp(
+    home: ProductListPage(viewModel: vm, authViewModel: _fakeAuthViewModel()),
+  );
+}
+
 // ─── Testes ─────────────────────────────────────────────────────────────────
 
 void main() {
@@ -130,7 +156,7 @@ void main() {
       final viewModel = ProductViewModel(_FakeRepository());
       await viewModel.loadProducts();
 
-      await tester.pumpWidget(MyApp(viewModel: viewModel));
+      await tester.pumpWidget(_buildApp(viewModel));
       await tester.pump();
 
       // Deve renderizar sem exceção
@@ -144,7 +170,7 @@ void main() {
       final viewModel = ProductViewModel(_FakeRepository());
       await viewModel.loadProducts();
 
-      await tester.pumpWidget(MyApp(viewModel: viewModel));
+      await tester.pumpWidget(_buildApp(viewModel));
       await tester.pump();
 
       // Não deve lançar exceção mesmo com imagem inválida
@@ -158,7 +184,7 @@ void main() {
       final viewModel = ProductViewModel(repo);
       await viewModel.loadProducts();
 
-      await tester.pumpWidget(MyApp(viewModel: viewModel));
+      await tester.pumpWidget(_buildApp(viewModel));
       await tester.pump();
 
       // Não deve lançar RenderFlex overflow exception
@@ -197,7 +223,7 @@ void main() {
       await viewModel.loadProducts();
       expect(viewModel.state.value.error, isNotNull);
 
-      await tester.pumpWidget(MyApp(viewModel: viewModel));
+      await tester.pumpWidget(_buildApp(viewModel));
       await tester.pump();
 
       // Mensagem de erro deve estar visível
@@ -363,7 +389,7 @@ void main() {
       final repo = _SlowRepository(delay: const Duration(milliseconds: 100));
       final viewModel = ProductViewModel(repo);
 
-      await tester.pumpWidget(MyApp(viewModel: viewModel));
+      await tester.pumpWidget(_buildApp(viewModel));
       await tester.pump();
 
       // Toca no FAB duas vezes rapidamente
@@ -434,7 +460,7 @@ void main() {
       // Ativa filtro sem favoritos
       viewModel.toggleFavoriteFilter();
 
-      await tester.pumpWidget(MyApp(viewModel: viewModel));
+      await tester.pumpWidget(_buildApp(viewModel));
       await tester.pump();
 
       // Deve exibir mensagem específica de "sem favoritos"
@@ -447,7 +473,7 @@ void main() {
       final viewModel = ProductViewModel(_FakeRepository());
       await viewModel.loadProducts();
 
-      await tester.pumpWidget(MyApp(viewModel: viewModel));
+      await tester.pumpWidget(_buildApp(viewModel));
       await tester.pump();
 
       // Inicialmente: sem contador
