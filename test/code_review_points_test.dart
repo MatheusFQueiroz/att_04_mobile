@@ -6,8 +6,6 @@
 // - M3: ProductModel.fromJson sem guards — verificar crash com dados inesperados
 // - M4: Race condition no loadProducts — verificar toque duplo rápido no FAB
 
-import 'dart:async';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
